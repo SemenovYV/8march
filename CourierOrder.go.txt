@@ -1,0 +1,168 @@
+package main
+
+import (
+	"fmt"
+	"math"
+	"slices"
+)
+
+type location struct {
+    latitude, longitude float64
+}
+
+type order struct {
+    id int
+    coordinateA location
+    coordinateB location
+    price float64
+    doneStatus bool
+}
+
+type courier struct {
+    id int
+    coordinate location
+    leftStatus bool
+}
+
+func rad(deg float64) float64 {
+    return deg * math.Pi / 180
+}
+
+func distance(p1, p2 location) float64 {
+    s1, c1 := math.Sincos(rad(p1.latitude))
+    s2, c2 := math.Sincos(rad(p2.latitude))
+    clongitude := math.Cos(rad(p1.longitude - p2.longitude))
+    return  6371032 * math.Acos(s1*s2+c1*c2*clongitude)
+}
+
+var ordersList [] order
+var couriersList [] courier
+func init() {
+    ordersList = []order{
+        order {
+            id: 1,
+            coordinateA: location{latitude:60, longitude:150},
+            coordinateB: location{60, 151},
+            price: 500,
+            doneStatus: false,
+            },
+        order {
+            2,
+            location{70, 150},
+            location{70, 151},
+            600,
+            false,
+            },
+        order {
+            3,
+            location{62.029825, 129.728295},
+            location{63.029825, 130.728295},
+            300,
+            false,
+            },
+        order {
+            4,
+            location{62.032228, 129.724081},
+            location{63.032228, 130.724081},
+            500,
+            false,
+            },
+        }
+    couriersList = []courier{
+        courier {
+            1,
+            location{65,150.5},
+            false,
+            },
+        courier {
+            2,
+            location{75, 155},
+            false,
+            },
+        courier {
+            3,
+            location{70, 145},
+            false,
+            },
+        }
+    }
+
+
+func main() {
+    
+    fmt.Println("Заказы",ordersList)
+    fmt.Println("Курьеры",couriersList)
+    
+    for {        
+        if anyOrders(ordersList) == false{ 
+            fmt.Println("нет свободных заказов. Выход программы")
+            break
+        }
+        if freeCouriers(couriersList) == false{
+            fmt.Println("нет свободных курьеров")
+            couriersReady(couriersList)
+        }
+        takeOrder(ordersList, couriersList)
+        
+    }
+}
+
+func anyOrders(ordersList []order) bool{
+    for i:=0; i<len(ordersList); i++ {
+         if ordersList[i].doneStatus == false {
+              return true
+         }
+    }
+    return false
+}
+
+func couriersReady(couriersList []courier) {
+    for i:=0; i<len(couriersList); i++ {
+         couriersList[i].leftStatus = false
+         
+    }
+    fmt.Println("все курьеры свободны")
+}
+
+func freeCouriers(couriersList []courier) bool{
+    for i:=0; i<len(couriersList); i++ {
+         if couriersList[i].leftStatus == false {
+              return true
+         }
+    }
+    return false
+}
+
+func takeOrder(ordersList []order, couriersList []courier) {
+    var path[] float64
+    var min float64
+    for j:=0; j<len(couriersList); j++ {
+        for i:=0; i<len(ordersList); i++ {
+            if ordersList[i].doneStatus == false && couriersList[j].leftStatus == false  {
+                 path=append(path,distance(ordersList[i].coordinateA, couriersList[j].coordinate))
+                 //fmt.Println(i,j)
+            }
+        }
+    }
+    //fmt.Printf("все расстояния %.2f ",path)
+    //fmt.Printf("\n")
+    min=slices.Min(path)
+    k:=0
+    
+    for j:=0; j<len(couriersList); j++ {
+        for i:=0; i<len(ordersList); i++ {
+            if ordersList[i].doneStatus == false && couriersList[j].leftStatus == false {
+                if min == path[k] {
+                    ordersList[i].doneStatus = true
+                    couriersList[j].coordinate = ordersList[i].coordinateA
+                    couriersList[j].leftStatus =true
+                    fmt.Printf("Курьер %d взял заказ %d, расстояние %.2f m \n",j+1,i+1,min)
+                    
+                }
+                k=k+1
+                
+            }
+        }
+    
+    }
+}
